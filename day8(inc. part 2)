@@ -1,0 +1,84 @@
+from os import X_OK
+import pandas as pd
+
+def split(word):
+    return [char for char in word]
+
+column_names = ["Signal_patterns", "Output_values"]
+data = pd.read_csv('day8.txt', delimiter = "|", header=None, names=column_names)
+
+all_correct_outputs = []
+
+for index, row in data.iterrows():
+    translator = {}
+    working_five = []
+    working_six = []
+
+    output_signals = str(row["Output_values"]).split(" ")
+    output_signals = list(filter(None, output_signals))
+    for idx, v in enumerate(output_signals):
+        output_signals[idx] = "".join(sorted(v))
+
+    input_signals = str(row["Signal_patterns"]).split(" ")
+    input_signals = list(filter(None, input_signals))
+    in_signal_lengths = [len(n) for n in input_signals]
+
+    # Find 1, 4, 7, and 8
+    for index2, segment_count in enumerate(in_signal_lengths):
+        if index2> len(in_signal_lengths): continue
+        if segment_count == 2:
+            translator["1"] = "".join(sorted(input_signals[index2]))
+        elif segment_count == 4:
+            translator["4"] = "".join(sorted(input_signals[index2]))
+        elif segment_count == 3:
+            translator["7"] = "".join(sorted(input_signals[index2]))
+        elif segment_count == 7:
+            translator["8"] = "".join(sorted(input_signals[index2]))
+        elif segment_count == 5:
+            working_five += ["".join(sorted(input_signals[index2]))]
+        else:
+            working_six += ["".join(sorted(input_signals[index2]))]
+
+    # Find 3
+    for x in working_five:
+        test = split(x)
+        if split(translator["1"])[0] in test and split(translator["1"])[1] in test:
+            translator["3"]= "".join(sorted(test))3
+            break
+    working_five.remove(str(translator["3"]))
+
+    # Find 9 and top left
+    for y in working_six:
+        top_left = list(set(split(y)) - set(split(translator["3"])))
+        if len(top_left) == 1:
+            translator["9"] = y
+            break
+    working_six.remove(str(translator["9"]))
+
+    # Find 2 and 5
+    for z in working_five:
+        two_or_five = split(z)
+        if top_left[0] in two_or_five:
+            translator["5"] = "".join(sorted(two_or_five))
+        else:
+            translator["2"] = "".join(sorted(two_or_five))
+    
+    #Find 6 and 0
+    if len(set(split(working_six[0])) - set(split(translator["5"]))) == 1:
+        translator["6"] = working_six[0]
+        translator["0"] = working_six[1]
+    else:
+        translator["6"] = working_six[1]
+        translator["0"] = working_six[0]
+
+    inv_translator = {v: k for k, v in translator.items()}
+    
+    # Put together the correct number
+    final_number = ''
+    for a in output_signals:
+        final_number += inv_translator[a]
+    
+    # Add number to list
+    all_correct_outputs += [int(final_number)]
+
+print("The sum of the numbers intended to be displayed is " + str(sum(all_correct_outputs)))
